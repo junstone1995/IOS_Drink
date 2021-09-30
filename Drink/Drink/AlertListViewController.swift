@@ -6,17 +6,30 @@
 //
 
 import UIKit
+import UserNotifications
 
 class AlertListViewController: UITableViewController{
     
     var alerts: [Alert] = []
+    let userNotificationCenter = UNUserNotificationCenter.current()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        requestNotificationPermission()
         let nibName = UINib(nibName: "AlertListCell", bundle: nil)
         tableView.register(nibName, forCellReuseIdentifier: "AlertListCell")
     }
+    
+    func requestNotificationPermission(){
+           UNUserNotificationCenter.current().requestAuthorization(options: [.alert,.sound,.badge], completionHandler: {didAllow,Error in
+               if didAllow {
+                   print("Push: 권한 허용")
+               } else {
+                   print("Push: 권한 거부")
+               }
+           })
+       }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -39,6 +52,7 @@ class AlertListViewController: UITableViewController{
             self.alerts = alertList
             
             UserDefaults.standard.set(try? PropertyListEncoder().encode(self.alerts), forKey: "alerts")
+            self.userNotificationCenter.addNotificationRequest(by: newAlert)
             
             self.tableView.reloadData()
         }
@@ -91,6 +105,8 @@ extension AlertListViewController{
         case .delete:
             self.alerts.remove(at: indexPath.row)
             UserDefaults.standard.set(try? PropertyListEncoder().encode(self.alerts), forKey: "alerts")
+            
+            userNotificationCenter.removePendingNotificationRequests(withIdentifiers: [alerts[indexPath.row].id])
             self.tableView.reloadData()
             return
         default:
